@@ -7,9 +7,9 @@ from app.schemas.user import CreateUser, LoginUser
 from app.model.user import User
 from app.core.security import password_hash, verify_password, DUMMY_HASH, create_token
 
-app = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
-@app.post("/register")
+@router.post("/register")
 def register(user_data: CreateUser, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.username == user_data.username or User.email == user_data.email))
     if user:
@@ -21,7 +21,7 @@ def register(user_data: CreateUser, session: Session = Depends(get_session)):
     session.refresh(new_user)
     return new_user
 
-@app.post("/login")
+@router.post("/login")
 def login(user_data: LoginUser, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.username == user_data.username or User.email == user_data.email))
     if not user:
