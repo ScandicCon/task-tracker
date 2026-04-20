@@ -27,3 +27,8 @@ def login(user_data: LoginUser, session: Session = Depends(get_session)):
     if not user:
         verify_password( user_data.password, DUMMY_HASH)
         return HTTPException()
+    if not verify_password(user_data.password, user.hashed_password):
+        return HTTPException(status_code=401)
+    
+    access_token = create_token({"sub": str (user.id)})
+    return access_token({"token": access_token, "token_type": "bearer"})
