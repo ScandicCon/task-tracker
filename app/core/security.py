@@ -7,10 +7,13 @@ from sqlmodel import select, Session
 from app.core.config import SECRET_KEY, ACCESS_TOKEN_EXPIRE, ALGORITHM 
 from app.db.session import get_session
 from app.model.user import User
+from app.model.task import Task
 
-oauth2_schema = OAuth2PasswordBearer(tokenUrl="token")
-
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/login")
+ 
 password_hasher = PasswordHash.recommended()
+
+DUMMY_HASH  = password_hasher.hash("DUMMY_PASSWORD")
 
 def password_hash(password: str):
     return password_hasher.hash(password)
@@ -27,7 +30,46 @@ def create_token(data: dict):
 def get_current_user(token:str = Depends(oauth2_schema), session : Session = Depends(get_session)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     user_id = payload.get("sub")
-    user = session.exec(select(User).where(user_id == User.id)).first
-    if not User:
+    user = session.exec(select(User).where(user_id == User.id)).first()
+    if not user:
         return HTTPException(status_code=401)
     return user
+
+
+def get_task_by_id(
+    task_id: int,
+    session: Session = Depends(get_session)
+):
+    task = session.exec(
+        select(Task).where(Task.id == task_id)).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    return task
+def require_status(allowed_statuses: list):
+    def check_status(task: Task = Depends(get_task_by_id)):
+        if task.status in allowed_statuses:
+            return task
+        else:
+            raise HTTPException(status_code=400, detail="Invalid task status")
+    return check_status
+
+
+def require_in_progress_owner(
+    task: Task = Depends(get_task_by_id),
+    user: User = Depends(get_current_user)
+):
+    if task.status != "in progress":
+        raise HTTPException(
+            status_code=400,
+            detail="Task is not in progress"
+        )
+
+    if task.user_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="This is not your task"
+        )
+
+    return task
