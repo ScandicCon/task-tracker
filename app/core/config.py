@@ -1,8 +1,11 @@
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
-ALGORITHM  = 'HS256'
+from dotenv import load_dotenv
 
-ACCESS_TOKEN_EXPIRE = 30 
+load_dotenv()
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE = int(os.getenv("ACCESS_TOKEN_EXPIRE", 30))
